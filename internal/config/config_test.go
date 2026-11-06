@@ -128,3 +128,28 @@ func TestLiteralSecrets(t *testing.T) {
 		}
 	}
 }
+
+func TestAPIKeyConfig(t *testing.T) {
+	for _, source := range []string{"synthetic-key", "{env: KEY}", "{command: [helper, key]}"} {
+		_, err := Parse(strings.NewReader("version: 1\nhosts: {example.com: {auth: {type: api-key, header: X-API-Key, key: " + source + "}}}"))
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, settings := range []string{
+		"type: api-key, key: sensitive",
+		"type: api-key, header: X-Key",
+		"type: api-key, header: 'Bad Header', key: sensitive",
+		"type: api-key, header: Host, key: sensitive",
+		"type: api-key, header: content-length, key: sensitive",
+		"type: api-key, header: X-Key, key: sensitive, token: other",
+		"type: bearer, token: other, key: sensitive",
+		"type: basic, username: user, password: other, header: X-Key",
+		"type: api-key, header: X-Key, key: {env: KEY, command: [helper]}",
+	} {
+		_, err := Parse(strings.NewReader("version: 1\nhosts: {example.com: {auth: {" + settings + "}}}"))
+		if err == nil || strings.Contains(err.Error(), "sensitive") {
+			t.Fatalf("unsafe or missing validation: %v", err)
+		}
+	}
+}

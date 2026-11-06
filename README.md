@@ -3,7 +3,7 @@
 ## Overview
 
 knok is an HTTP command-line client with authentication selected automatically
-from exact-host entries in a YAML configuration file. It supports Bearer tokens,
+from exact-host entries in a YAML configuration file. It supports header-based API keys, Bearer tokens,
 Basic authentication, and OAuth2 client credentials with a persistent token cache.
 
 **Status:** v0 development. The configuration and command interface may change.
@@ -74,12 +74,18 @@ hosts:
 Secrets can come from environment variables, external commands, or literal YAML
 strings. Environment variables and commands are recommended. See
 [configuration and authentication](docs/configuration.md)
-and the [example configuration](examples/config.yaml) for all three auth methods.
+and the [example configuration](examples/config.yaml) for all auth methods.
 
 Use `knok --help` for options and `knok cache clear` to discard cached OAuth
 tokens. Response bodies go to stdout; diagnostics go to stderr. Completed HTTP
 responses, including 4xx and 5xx, exit successfully. Runtime failures exit 1;
 invalid arguments or configuration exit 2.
+
+### API keys
+
+Use `type: api-key`, `header: X-API-Key`, and a `key` credential source
+to configure header-based API authentication. See the
+[API-key configuration guide](docs/configuration.md#api-keys) for examples.
 
 ## How to Build Locally
 

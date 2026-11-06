@@ -220,6 +220,19 @@ func (r Runner) Run(ctx context.Context, args []string, in io.Reader, out, errOu
 	if len(req.Header.Values("Authorization")) > 1 {
 		return fail(2, fmt.Errorf("duplicate Authorization headers are not allowed"))
 	}
+	h, matched := cfg.Hosts[config.Hostname(u.Hostname())]
+	explicitKey := false
+	if matched && h.Auth.Type == "api-key" {
+		for _, raw := range o.headers {
+			name, _, _ := strings.Cut(raw, ":")
+			if strings.EqualFold(strings.TrimSpace(name), h.Auth.Header) {
+				explicitKey = true
+			}
+		}
+		if len(req.Header.Values(h.Auth.Header)) > 1 {
+			return fail(2, fmt.Errorf("duplicate API-key headers are not allowed"))
+		}
+	}
 	client := http.Client{}
 	if r.Client != nil {
 		client = *r.Client
@@ -237,7 +250,7 @@ func (r Runner) Run(ctx context.Context, args []string, in io.Reader, out, errOu
 		}
 		return nil
 	}
-	if h, ok := cfg.Hosts[config.Hostname(u.Hostname())]; ok && !o.noAuth && len(req.Header.Values("Authorization")) == 0 {
+	if matched && !o.noAuth && !explicitKey && len(req.Header.Values("Authorization")) == 0 {
 		cache, err := auth.DefaultCache()
 		if err != nil {
 			cache = auth.Cache{}

@@ -23,6 +23,18 @@ func (p Provider) Apply(ctx context.Context, req *http.Request, a config.Auth) e
 		return fmt.Errorf("configured authentication requires HTTPS")
 	}
 	switch a.Type {
+	case "api-key":
+		if !config.ValidAPIKeyHeader(a.Header) {
+			return fmt.Errorf("invalid API-key header")
+		}
+		key, err := Resolve(ctx, a.Key)
+		if err != nil {
+			return err
+		}
+		if !validToken(key) {
+			return fmt.Errorf("invalid API key")
+		}
+		req.Header.Set(a.Header, key)
 	case "basic":
 		secret, err := Resolve(ctx, a.Password)
 		if err != nil {
