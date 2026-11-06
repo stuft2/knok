@@ -261,3 +261,48 @@ func TestOutputFailure(t *testing.T) {
 		t.Fatal("output failure ignored", code, diagnostics.String())
 	}
 }
+
+func TestAPIKeySelection(t *testing.T) {
+	isolate(t)
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, r.Header.Get("X-API-Key"))
+	}))
+	defer server.Close()
+	path := configFile(t, "127.0.0.1", "      type: api-key\n      header: X-API-Key\n      key: {env: TEST_API_KEY}\n")
+	for _, tc := range []struct {
+		name, key, want string
+		args            []string
+		code            int
+	}{
+		{"configured", "synthetic-key", "synthetic-key", nil, 0},
+		{"missing", "", "", nil, 1},
+		{"invalid", "synthetic key", "", nil, 1},
+		{"override", "", "explicit", []string{"-H", "x-api-key: explicit"}, 0},
+		{"empty override", "", "", []string{"-H", "X-API-Key:"}, 0},
+		{"authorization bypass", "", "", []string{"-H", "Authorization: explicit"}, 0},
+		{"disabled", "", "", []string{"--no-auth"}, 0},
+		{"duplicates", "", "", []string{"-H", "X-API-Key: one", "-H", "x-api-key: two"}, 2},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv("TEST_API_KEY", tc.key)
+			args := append([]string{"--config", path, server.URL}, tc.args...)
+			code, out, errOut := run(t, Runner{Client: server.Client()}, args...)
+			if code != tc.code || out != tc.want {
+				t.Fatal(code, out, errOut)
+			}
+			if strings.Contains(errOut, "synthetic") {
+				t.Fatal("credential exposed")
+			}
+		})
+	}
+	t.Setenv("TEST_API_KEY", "synthetic-key")
+	plain := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { t.Error("HTTP request should be blocked") }))
+	defer plain.Close()
+	if code, _, _ := run(t, Runner{}, "--config", path, plain.URL); code != 1 {
+		t.Fatal("HTTP accepted")
+	}
+	unmatched := configFile(t, "unmatched.example", "      type: api-key\n      header: X-API-Key\n      key: {env: MISSING_API_KEY}\n")
+	if code, out, errOut := run(t, Runner{Client: server.Client()}, "--config", unmatched, server.URL); code != 0 || out != "" {
+		t.Fatal(code, out, errOut)
+	}
+}

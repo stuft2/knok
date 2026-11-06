@@ -32,6 +32,8 @@ type Secret struct {
 	Command []string `yaml:"command" json:"command,omitempty"`
 }
 type Auth struct {
+	Header          string   `yaml:"header" json:"header,omitempty"`
+	Key             Secret   `yaml:"key" json:"key,omitempty"`
 	Type            string   `yaml:"type" json:"type"`
 	Token           Secret   `yaml:"token" json:"token,omitempty"`
 	Username        string   `yaml:"username" json:"username,omitempty"`
@@ -205,7 +207,14 @@ func (s Secret) valid() bool {
 	return sources == 1
 }
 func (a *Auth) validate() error {
+	if a.Type != "api-key" && (a.Header != "" || a.Key.present()) {
+		return fmt.Errorf("API-key fields require api-key authentication")
+	}
 	switch a.Type {
+	case "api-key":
+		if !ValidAPIKeyHeader(a.Header) || !a.Key.valid() || a.Token.present() || a.Username != "" || a.Password.present() || a.hasOAuth() {
+			return fmt.Errorf("api-key requires only a valid header and key")
+		}
 	case "bearer":
 		if !a.Token.valid() || a.Username != "" || a.Password.present() || a.hasOAuth() {
 			return fmt.Errorf("bearer requires only a token")
@@ -245,4 +254,21 @@ func (a *Auth) validate() error {
 }
 func (a Auth) hasOAuth() bool {
 	return a.TokenURL != "" || a.ClientID.present() || a.ClientSecret.present() || a.Scopes != nil || a.TokenAuthMethod != ""
+}
+
+// ValidAPIKeyHeader excludes transport-controlled headers.
+func ValidAPIKeyHeader(s string) bool {
+	if s == "" {
+		return false
+	}
+	for _, c := range s {
+		if !(c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9' || strings.ContainsRune("!#$%&'*+-.^`|~", c)) {
+			return false
+		}
+	}
+	switch strings.ToLower(s) {
+	case "host", "content-length", "connection", "te", "trailer", "transfer-encoding", "upgrade", "proxy-connection", "proxy-authorization":
+		return false
+	}
+	return true
 }

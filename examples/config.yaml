@@ -22,3 +22,10 @@ hosts:
       username: stuft2
       password:
         env: LEGACY_PASSWORD
+
+  service.example.com:
+    auth:
+      type: api-key
+      header: X-API-Key
+      key:
+        env: SERVICE_API_KEY

@@ -18,6 +18,7 @@ mapping with one of these types:
 
 | Type | Required fields | Optional fields |
 | --- | --- | --- |
+| `api-key` | `header`, `key` | None |
 | `bearer` | `token` | None |
 | `basic` | `username`, `password` | None |
 | `oauth2-client-credentials` | `token_url`, `client_id`, `client_secret` | `scopes`, `token_auth_method` |
@@ -28,7 +29,7 @@ nesting levels. Quote numeric identifiers so YAML treats them as strings.
 
 ## Credential sources
 
-`client_id`, `client_secret`, `token`, and `password` accept either a literal YAML
+`key`, `client_id`, `client_secret`, `token`, and `password` accept either a literal YAML
 string or an `env` / `command` reference. Environment variables and commands are
 recommended for secrets so their values stay outside the configuration file.
 A reference contains exactly one source:
@@ -155,3 +156,38 @@ same destination as the body; `--output -` selects stdout.
 Options may appear before or after the URL. Long value options also accept
 `--name=value`. Short flags must be separate arguments; curl's combined flags and
 full option vocabulary are not supported.
+
+## API keys
+
+Configure header-based API keys per host:
+
+```yaml
+version: 1
+hosts:
+  service.example.com:
+    auth:
+      type: api-key
+      header: X-API-Key
+      key:
+        env: SERVICE_API_KEY
+```
+
+The key accepts the same literal, environment, and command sources as other
+credentials, including password-manager commands. Keys must contain only
+printable ASCII characters without spaces. Header names must be valid HTTP
+names and cannot be transport-controlled headers (Host, Content-Length,
+Connection, TE, Trailer, Transfer-Encoding, Upgrade, Proxy-Connection, or
+Proxy-Authorization).
+
+Configured keys require HTTPS and exact-host matching. An explicit matching
+header (case-insensitive, even with an empty value), an explicit Authorization
+header, or --no-auth skips credential lookup. Duplicate matching API-key headers
+are rejected. Keys are not stored in the OAuth cache. Query-parameter keys are
+not supported.
+
+A password-manager reference keeps the key outside the configuration:
+
+```yaml
+key:
+  command: [pass-cli, item, view, --vault-name, Work, --item-title, Example API, --field, API Key, --output, human]
+```
