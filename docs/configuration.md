@@ -164,12 +164,12 @@ Configure header-based API keys per host:
 ```yaml
 version: 1
 hosts:
-  brightspot.example.com:
+  service.example.com:
     auth:
       type: api-key
       header: X-API-Key
       key:
-        env: BRIGHTSPOT_API_KEY
+        env: SERVICE_API_KEY
 ```
 
 The key accepts the same literal, environment, and command sources as other
@@ -189,5 +189,5 @@ A password-manager reference keeps the key outside the configuration:
 
 ```yaml
 key:
-  command: [pass-cli, item, view, --vault-name, Work, --item-title, Brightspot, --field, API Key, --output, human]
+  command: [pass-cli, item, view, --vault-name, Work, --item-title, Example API, --field, API Key, --output, human]
 ```

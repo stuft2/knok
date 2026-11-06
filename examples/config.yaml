@@ -23,9 +23,9 @@ hosts:
       password:
         env: LEGACY_PASSWORD
 
-  brightspot.example.com:
+  service.example.com:
     auth:
       type: api-key
       header: X-API-Key
       key:
-        env: BRIGHTSPOT_API_KEY
+        env: SERVICE_API_KEY
