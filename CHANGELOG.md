@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/stuft2/knok/compare/v0.2.0...v0.3.0) (2026-11-06)
+
+
+### Features
+
+* **auth:** support header-based API keys ([#11](https://github.com/stuft2/knok/issues/11)) ([a23d4c7](https://github.com/stuft2/knok/commit/a23d4c7da5ce0c58d5aba7c57da587bbb88141c5))
+
 ## [0.2.0](https://github.com/stuft2/knok/compare/v0.1.0...v0.2.0) (2026-10-30)
 
 
